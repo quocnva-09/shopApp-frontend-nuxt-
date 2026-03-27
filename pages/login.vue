@@ -52,16 +52,15 @@ export default {
         }
       }).then(async () => {
         await this.load()
-        this.notify([true, "Welcome back."])
+        this.notify([true, "Welcome shop."])
         this.show = false
       }).catch(err => {    
-          this.notify([false, "make sure your data is correct"])
+          this.notify([false, "Email or password is incorrect!"])
       })
       loader.hide()
     }
   }
 }
-</script>
 </script>
 
 <style lang="scss">
