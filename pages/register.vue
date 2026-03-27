@@ -159,9 +159,9 @@ export default {
           this.notify([false, message])
           this.errors = errors
         } else {
-          console.log('keeeeeeeekkkkee----' + err.response.data);
+          console.log('Log error:' + err.response.data);
 
-          this.notify([false, "Something went wrong :O, contact us"])
+          this.notify([false, "Something went wrong , contact us"])
         }
       })
       loader.hide()
