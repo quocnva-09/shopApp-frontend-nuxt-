@@ -128,43 +128,101 @@ export default {
       step: 1
     }
   },
+
   methods: {
+    validateForm() {
+      this.errors = {}
+
+      // Email
+      if (!this.userInfo.email) {
+        this.errors.email = "Email is required"
+      } else if (!/^\S+@\S+\.\S+$/.test(this.userInfo.email)) {
+        this.errors.email = "Invalid email format"
+      }
+
+      // Username
+      if (!this.userInfo.username) {
+        this.errors.username = "Username is required"
+      } else if (this.userInfo.username.length < 3) {
+        this.errors.username = "Username must be at least 3 characters"
+      }
+
+      // First Name
+      if (!this.userInfo.firstName) {
+        this.errors.firstName = "First name is required"
+      }
+
+      // Last Name
+      if (!this.userInfo.lastName) {
+        this.errors.lastName = "Last name is required"
+      }
+
+      // Password
+      if (!this.userInfo.password) {
+        this.errors.password = "Password is required"
+      } else if (this.userInfo.password.length < 6) {
+        this.errors.password = "Password must be at least 6 characters"
+      }
+
+      // Password Confirmation
+      if (this.userInfo.password !== this.userInfo.password_confirmation) {
+        this.errors.password_confirmation = "Passwords do not match"
+      }
+
+      return Object.keys(this.errors).length === 0
+    },
+
     async submitForm() {
-      let loader = this.$loading.show()
-      let res = await this.$axios.post('api/register', this.userInfo).then(async res => {
+      // ✅ Validate before API call
+      if (!this.validateForm()) {
+        this.notify([false, "Please fix the errors"])
+        return
+      }
+
+      const loader = this.$loading.show()
+
+      try {
+        const res = await this.$axios.post('api/register', this.userInfo)
+
         if (res.data.success) {
+          // Auto login
           await this.$auth.loginWith('local', {
             data: {
               username: this.userInfo.email,
               password: this.userInfo.password
             }
-          }).then(async () => {
-            await this.load(this.$auth.user, this.$store)
-            this.notify([true, "Welcome to chopshop."])
-            this.step = 2
-          }).catch(err => console.log(err))
+          })
+
+          await this.load(this.$auth.user, this.$store)
+          this.notify([true, "Welcome to chopshop."])
+          this.step = 2
         } else {
+          this.notify([false, "Registration failed"])
         }
-      }).catch(err => {
-        const errCodes = [404, 422, 403]
-        if (errCodes.indexOf(err.response.status) !== -1) {
-          let message = err.response.status == 422 ?
-            err.response.data.message :
-            err.response.data.data.message;
 
-          let errors = err.response.status == 422 ?
-            err.response.data.errors :
-            err.response.data.data.erroprs;
+      } catch (err) {
+        const status = err.response?.status
 
-          this.notify([false, message])
-          this.errors = errors
+        if ([422, 403, 404].includes(status)) {
+          const message = status === 422
+            ? err.response.data.message
+            : err.response.data.data?.message
+
+          const errors = status === 422
+            ? err.response.data.errors
+            : err.response.data.data?.errors
+
+          this.notify([false, message || "Validation error"])
+          this.errors = errors || {}
+
         } else {
-          console.log(err);
-
+          console.error(err)
           this.notify([false, "Something went wrong :O, contact us"])
         }
-      })
-      loader.hide()
+
+      } finally {
+        loader.hide()
+      }
     }
   }
 }
